@@ -14,21 +14,27 @@ io.on('connection', async (socket) => {
     addUser(socket, name)
   });
   socket.on('chat', (data) => {
-    sendMessage(data);
+    sendMessage(data, socket);
   });
   socket.on('disconnect', () => {
     disconnect(socket);
   });
 });
 
-function sendMessage(data) {
-  users.forEach(element => {
+function sendMessage(data, socket) {
+  let output = [];
+  users.forEach((element, index ) => {
     if (data.sendTo && data.sendTo !== 'all') {
       if(element.name === data.sendTo || element.name === data.owner) {
+        // output = pushMessage(data, element, socket.name)
+        // console.log(element)
         element.emit('chat', data);
       }
     } else {
+      // output = pushMessage(data, element, socket.name)
+      // console.log(element.messages), console.log(output.messages)
       element.emit('chat', data);
+
     }
   });
 }
@@ -53,6 +59,17 @@ function addUser(socket, name) {
   // }
   users.push(socket)
   getListUser()
+}
+
+function pushMessage(data, user, formUser) {
+  if (!user.messages) {
+    user.messages = [];
+  }
+  if (!user.messages[formUser]) {
+    user.messages[formUser] = [];
+  }
+  user.messages[formUser].push = data;
+  return user
 }
 
 function getListUser() {
