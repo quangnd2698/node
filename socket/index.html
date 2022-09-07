@@ -4,7 +4,8 @@
 <head>
     <title>Socket.IO chat</title>
     <!-- CSS only -->
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-gH2yIJqKdNHPEq0n4Mqa/HGKIhSkIHeL5AyhkYV8i59U5AR6csBvApHHNl/vI1Bx" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-gH2yIJqKdNHPEq0n4Mqa/HGKIhSkIHeL5AyhkYV8i59U5AR6csBvApHHNl/vI1Bx" crossorigin="anonymous">
     <style>
         body {
             margin: 0;
@@ -14,7 +15,7 @@
         }
 
         #form {
-            /* display: flex; */    
+            /* display: flex; */
             position: absolute;
             bottom: 0;
             /* background-color: beige; */
@@ -34,14 +35,17 @@
         #input:focus {
             outline: none;
         }
+
         .send-to {
             width: 25%;
             float: left;
             margin-right: 10px;
         }
+
         .new-message {
             width: 80%;
         }
+
         #form>button {
             width: 15%;
             float: right;
@@ -61,11 +65,13 @@
         #messages>li:nth-child(odd) {
             background: #efefef;
         }
+
         .float-left {
             float: left;
             width: 100px;
             font-weight: 700;
         }
+
         .login {
             width: 60%;
             margin-left: 20%;
@@ -74,45 +80,69 @@
             border-radius: 5px;
             margin-top: 100px;
         }
+
         .header {
             padding: 10px;
             width: 100%;
             font-size: 25px;
             font-weight: 700;
         }
+
         .row {
             height: 100vh;
             margin: unset;
             padding: unset;
         }
+
         .col-9 {
             height: 100%;
             position: relative;
             padding: unset;
         }
+
         small {
             font-size: 0.7rem;
         }
+
         .online {
             color: #0ee04d;
         }
+
         .offline {
             color: #f31710;
         }
+
         .list-user {
             background-color: #660066;
             height: 100%;
             color: #ffffff;
         }
+        #list-user > li {
+            padding: 5px 10px;
+        }
+
         .pointer {
             cursor: pointer;
         }
+
         .messages-header {
             height: 50px;
             padding: 10px 20px;
             font-size: 1.2rem;
             background-color: beige;
             border-bottom: #333 solid 1px;
+        }
+
+        .badge-danger {
+            background-color: red;
+            margin-left: 15px;
+        }
+
+        .active {
+            background-color: lavender;
+            padding: 5px 10px;
+            color: black;
+            border-radius: 5px;
         }
     </style>
 </head>
@@ -121,7 +151,7 @@
 <body ng-app="myApp" ng-controller="myCtrl">
     <div ng-hide="islogin">
         <div class="login text-center">
-                <h3>Login chat</h3>
+            <h3>Login chat</h3>
             <input ng-model="name" class="form-control" autocomplete="off" />
             <button class="btn btn-success mt-2" type="button" ng-click="login()">Login</button>
         </div>
@@ -132,16 +162,17 @@
                 {{name}}
             </div>
             <ul id="list-user" class="list-group">
-                <li class="pointer" ng-click="changeSendTo(defaultSendTo)">All</li>
-                <li class="list-item pb-2 pointer" ng-repeat="user in users" ng-click="changeSendTo(user)">
-                  {{user.name}} <small ng-class="getStatus(user)">{{getStatus(user)}}</small>
-                </li> 
+                <li class="list-item pb-2 pointer" ng-class="getStatus(user).tabStatus" ng-repeat="user in users"
+                    ng-click="changeSendTo(user)">
+                    {{user.name}} <small ng-class="getStatus(user).userStatus">{{getStatus(user).userStatus}}</small>
+                    <span ng-hide="!getNotification(user)" class="badge badge-danger">{{getNotification(user)}}</span>
+                </li>
             </ul>
         </div>
         <div class="col-9">
             <div class="messages-header">
                 {{sendTo.name ? sendTo.name : 'all'}}
-                <small ng-class="getStatus(sendTo)">{{getStatus(sendTo)}}</small>
+                <small ng-class="getStatus(sendTo).userStatus">{{getStatus(sendTo).userStatus}}</small>
             </div>
             <ul id="messages">
                 <li ng-repeat="item in roomMessages track by $index">
@@ -154,7 +185,8 @@
                 </li>
             </ul>
             <div id="form">
-                <textarea class="form-control d-inline new-message" ng-model="newMessage" placeholder="you message...." autocomplete="off" ></textarea>
+                <textarea class="form-control d-inline new-message" ng-model="newMessage" placeholder="you message...."
+                    autocomplete="off"></textarea>
                 <button class="d-inline btn btn-success" ng-click="sendMessage()">Send</button>
             </div>
         </div>
@@ -170,21 +202,36 @@
             $scope.name = "";
             $scope.islogin = false;
             $scope.newMessage = '';
+            $scope.notifications = [];
             $scope.sendTo = $scope.defaultSendTo = {
                 name: 'all',
                 status: 1
             }
 
             socket.on('chat', (msg) => {
-                $scope.$apply(function (  ) {
-                    $scope.roomMessages.push(msg)
-                    // $scope.messages[$scope.sendTo.name] = $scope.roomMessages;
+                $scope.$apply(function () {
+                    let key = msg.sendTo == 'all'
+                        ? 'all'
+                        : (msg.owner && ($scope.name !== msg.owner)
+                            ? msg.owner
+                            : (msg.sendTo ? msg.sendTo : 'orther'));
+                    if (!$scope.messages[key]) {
+                        $scope.messages[key] = [];
+                    }
+                    $scope.messages[key].push(msg);
+                    if ($scope.sendTo.name == key) {
+                        $scope.roomMessages = $scope.messages[key]
+                    }
+                    setNotification(key)
+                    console.log(key);
+                    console.log($scope.notifications);
                 });
             });
 
             socket.on('listUser', (users) => {
-                $scope.$apply(function (  ) {
+                $scope.$apply(function () {
                     $scope.users = users;
+                    $scope.users.unshift($scope.defaultSendTo);
                 });
             });
 
@@ -207,20 +254,46 @@
                     $scope.newMessage = '';
                 }
             }
-            
+
             $scope.getStatus = function (user) {
-                return user.status ? 'online' : 'offline';
+                let userStatus = user.status ? 'online' : 'offline';
+                let tabStatus = (user.name === $scope.sendTo.name) ? 'active' : '';
+                return {
+                    userStatus: userStatus,
+                    tabStatus: tabStatus
+                }
+            }
+
+            $scope.getNotification = function (user) {
+                let result = false;
+                if (user.name && $scope.notifications[user.name]) {
+                    result = $scope.notifications[user.name]
+                }
+                return result;
             }
 
             $scope.changeSendTo = function (sendTo) {
                 $scope.sendTo = sendTo
-                // if (!$scope.messages[sendTo.name]) {
-                //     console.log(1);
-                //     $scope.messages[sendTo.name] = [];
-                // }
-                // console.log($scope.messages[sendTo.name]);
-                // $scope.roomMessages = $scope.messages[sendTo.name]
+                if (!$scope.messages[sendTo.name]) {
+                    $scope.messages[sendTo.name] = [];
+                }
+                $scope.roomMessages = $scope.messages[sendTo.name];
+                if ($scope.notifications[sendTo.name]) {
+                    $scope.notifications[sendTo.name] = 0;
+                }
             }
+            function findUser(array, userName) {
+                return array.findIndex(({ name }) => name === userName);
+            }
+            function setNotification(key) {
+                if (key !== $scope.sendTo.name) {
+                    if (!$scope.notifications[key]) {
+                        $scope.notifications[key] = 0;
+                    }
+                    $scope.notifications[key]++;
+                }
+            }
+
         });
     </script>
 </body>
